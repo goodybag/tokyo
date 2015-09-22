@@ -12,7 +12,7 @@ export function listeningTo(storeNames, getterMethodName = 'getStateFromDependen
                 originalCDM.apply(this, arguments);
             }
 
-            const stores = storeNames.map(name => this.dependencies[name]);
+            const stores = storeNames.map(name => this.context.dependencies[name]);
             const getterMethod = this[getterMethodName];
 
             this._setStateFromStores = () => {
@@ -29,7 +29,7 @@ export function listeningTo(storeNames, getterMethodName = 'getStateFromDependen
                 originalCWU.apply(this, arguments);
             }
 
-            const stores = storeNames.map(name => this.dependencies[name]);
+            const stores = storeNames.map(name => this.context.dependencies[name]);
             const getterMethod = this[getterMethodName];
 
             lodash.each(stores, store => {
