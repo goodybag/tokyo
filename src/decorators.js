@@ -1,40 +1,56 @@
+import React, {Component, PropTypes} from 'react';
 import lodash from 'lodash';
 
-export function listeningTo(storeNames, getterMethodName = 'getStateFromDependencies') {
+export function listeningTo(storeNames, getter) {
     return decorator;
 
-    function decorator(fn) {
-        const originalCDM = fn.prototype.componentDidMount;
-        const originalCWU = fn.prototype.componentWillUnmount;
-
-        fn.prototype.componentDidMount = function componentWillMount() {
-            if (originalCDM) {
-                originalCDM.apply(this, arguments);
+    function decorator(ChildComponent) {
+        class ListeningContainerComponent extends Component {
+            static contextTypes = {
+                dependencies: PropTypes.object.isRequired
             }
 
-            const stores = storeNames.map(name => this.context.dependencies[name]);
-            const getterMethod = this[getterMethodName];
+            componentDidMount() {
+                const {dependencies} = this.context;
+                const stores = lodash.map(storeNames, name => dependencies[name]);
 
-            this._setStateFromStores = () => {
-                this.setState(getterMethod.call(this));
-            };
-
-            lodash.each(stores, store => {
-                store.on('change', this._setStateFromStores);
-            });
-        };
-
-        fn.prototype.componentWillUnmount = function componentWillMount() {
-            if (originalCWU) {
-                originalCWU.apply(this, arguments);
+                lodash.each(stores, store => {
+                    store.on('change', this.setStateFromStores);
+                });
             }
 
-            const stores = storeNames.map(name => this.context.dependencies[name]);
-            const getterMethod = this[getterMethodName];
+            componentWillUnmount() {
+                const {dependencies} = this.context;
+                const stores = lodash.map(storeNames, name => dependencies[name]);
 
-            lodash.each(stores, store => {
-                store.removeListener('change', this._setStateFromStores);
-            });
-        };
+                lodash.each(stores, store => {
+                    store.removeListener('change', this.setStateFromStores);
+                });
+            }
+
+            constructor(props, context) {
+                super(props, context);
+
+                const {dependencies} = this.context;
+
+                this.state = {
+                    childProps: getter(dependencies)
+                };
+
+                this.setStateFromStores = () => {
+                    this.setState({
+                        childProps: getter(dependencies)
+                    });
+                };
+            }
+
+            render() {
+                const {childProps} = this.state;
+
+                return <ChildComponent {...childProps}/>;
+            }
+        }
+
+        return ListeningContainerComponent;
     }
 }
