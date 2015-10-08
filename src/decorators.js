@@ -47,7 +47,7 @@ export function listeningTo(storeNames, getter) {
             render() {
                 const {childProps} = this.state;
 
-                return <ChildComponent {...childProps}/>;
+                return <ChildComponent {...this.props} {...childProps}/>;
             }
         }
 
