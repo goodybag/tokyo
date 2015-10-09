@@ -10,6 +10,8 @@ export function listeningTo(storeNames, getter) {
                 dependencies: PropTypes.object.isRequired
             }
 
+            static Original = ChildComponent
+
             componentDidMount() {
                 const {dependencies} = this.context;
                 const stores = lodash.map(storeNames, name => dependencies[name]);
