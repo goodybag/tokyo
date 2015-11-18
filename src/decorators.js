@@ -1,31 +1,37 @@
 import React, {Component, PropTypes} from 'react';
 import lodash from 'lodash';
 
-export function listeningTo(storeNames, getter) {
+export function listeningTo(storeTokens, getter) {
     return decorator;
 
     function decorator(ChildComponent) {
         class ListeningContainerComponent extends Component {
             static contextTypes = {
-                dependencies: PropTypes.object.isRequired
+                dependencyCache: PropTypes.instanceOf(Map)
             }
 
             static Original = ChildComponent
 
-            componentDidMount() {
-                const {dependencies} = this.context;
-                const stores = lodash.map(storeNames, name => dependencies[name]);
+            getStores() {
+                const {dependencyCache} = this.context;
 
-                lodash.each(stores, store => {
+                return lodash.map(storeTokens, name => {
+                    if (typeof this.props[name] === 'string') {
+                        return this.props[name];
+                    } else {
+                        return dependencyCache.get([name]);
+                    }
+                });
+            }
+
+            componentDidMount() {
+                lodash.each(this.stores, store => {
                     store.on('change', this.setStateFromStores);
                 });
             }
 
             componentWillUnmount() {
-                const {dependencies} = this.context;
-                const stores = lodash.map(storeNames, name => dependencies[name]);
-
-                lodash.each(stores, store => {
+                lodash.each(this.stores, store => {
                     store.removeListener('change', this.setStateFromStores);
                 });
             }
@@ -33,15 +39,15 @@ export function listeningTo(storeNames, getter) {
             constructor(props, context) {
                 super(props, context);
 
-                const {dependencies} = this.context;
+                this.stores = this.getStores();
 
                 this.state = {
-                    childProps: getter(dependencies)
+                    childProps: getter(this.props)
                 };
 
                 this.setStateFromStores = () => {
                     this.setState({
-                        childProps: getter(dependencies)
+                        childProps: getter(this.props)
                     });
                 };
             }
