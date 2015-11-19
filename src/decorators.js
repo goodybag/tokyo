@@ -1,7 +1,11 @@
 import React, {Component, PropTypes} from 'react';
 import lodash from 'lodash';
 
-export function listeningTo(storeTokens, getter) {
+export function listeningTo(storeTokens = [], getter) {
+    if (storeTokens.some(token => token === undefined)) {
+        throw new TypeError('@listeningTo cannot handle undefined tokens');
+    }
+
     return decorator;
 
     function decorator(ChildComponent) {
@@ -15,11 +19,15 @@ export function listeningTo(storeTokens, getter) {
             getStores() {
                 const {dependencyCache} = this.context;
 
-                return lodash.map(storeTokens, name => {
-                    if (typeof this.props[name] === 'string') {
-                        return this.props[name];
+                return lodash.map(storeTokens, token => {
+                    if (typeof token === 'string') {
+                        return this.props[token];
                     } else {
-                        return dependencyCache.get([name]);
+                        if (dependencyCache.has(token)) {
+                            return dependencyCache.get(token);
+                        } else {
+                            throw new RangeError(`@listeningTo cannot find ${token.name || token} in dependency cache`);
+                        }
                     }
                 });
             }
