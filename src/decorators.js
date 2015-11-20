@@ -33,21 +33,19 @@ export function listeningTo(storeTokens = [], getter) {
             }
 
             componentDidMount() {
-                lodash.each(this.stores, store => {
+                lodash.each(this.getStores(), store => {
                     store.on('change', this.setStateFromStores);
                 });
             }
 
             componentWillUnmount() {
-                lodash.each(this.stores, store => {
+                lodash.each(this.getStores(), store => {
                     store.removeListener('change', this.setStateFromStores);
                 });
             }
 
             constructor(props, context) {
                 super(props, context);
-
-                this.stores = this.getStores();
 
                 this.state = {
                     childProps: getter(this.props)
