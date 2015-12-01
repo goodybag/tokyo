@@ -44,6 +44,10 @@ export function listeningTo(storeTokens = [], getter) {
                 });
             }
 
+            componentWillReceiveProps() {
+                this.setStateFromStores();
+            }
+
             constructor(props, context) {
                 super(props, context);
 
