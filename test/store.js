@@ -3,7 +3,7 @@ import expect from 'expect';
 import {EventEmitter} from 'events';
 import {Dispatcher} from 'flux';
 
-import {Store} from '../src/Store';
+import {Store} from '../src/store';
 
 class TestAction {
     constructor(value) {

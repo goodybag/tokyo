@@ -1,4 +1,4 @@
-export {Store} from './Store';
+export {Store} from './store';
 
 export {
     listeningTo
