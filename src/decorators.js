@@ -15,6 +15,7 @@ export function listeningTo(storeTokens = [], getter) {
             }
 
             static Original = ChildComponent
+            static displayName = `ListeningContainerComponent (${ChildComponent.displayName || ChildComponent.name})`;
 
             getStores() {
                 const {dependencyCache} = this.context;
