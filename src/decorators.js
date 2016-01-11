@@ -12,9 +12,9 @@ export function listeningTo(storeTokens = [], getter) {
         class ListeningContainerComponent extends Component {
             static contextTypes = {
                 dependencyCache: PropTypes.instanceOf(Map)
-            }
+            };
 
-            static Original = ChildComponent
+            static Original = ChildComponent;
             static displayName = `ListeningContainerComponent (${ChildComponent.displayName || ChildComponent.name})`;
 
             getStores() {
