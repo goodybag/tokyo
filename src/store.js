@@ -1,3 +1,4 @@
+import Promise from 'bluebird';
 import {EventEmitter} from 'events';
 import lodash from 'lodash';
 
@@ -11,6 +12,22 @@ export class Store extends EventEmitter {
     }
 
     bind(actionType, method) {
+        if (actionType == null) {
+            throw new TypeError('Action type passed to Store#bind() is undefined');
+        }
+
+        if (typeof actionType !== 'function') {
+            throw new TypeError('Action type passed to Store#bind() is not a function/constructor');
+        }
+
+        if (method == null) {
+            throw new TypeError('Method passed to Store#bind() is undefined');
+        }
+
+        if (typeof method !== 'function') {
+            throw new TypeError('Method passed to Store#bind() is not a function');
+        }
+
         this._triggers.push({actionType, method});
     }
 
@@ -20,9 +37,14 @@ export class Store extends EventEmitter {
 }
 
 function dispatchHandler(action) {
-    lodash.each(this._triggers, ({actionType, method}) => {
+    return Promise.all(lodash.map(this._triggers, ({actionType, method}) => {
         if (action instanceof actionType) {
-            method.call(this, action);
+            return Promise.try(() => {
+                return method.call(this, action);
+            }).catch(err => {
+                this.emit('error', err);
+                throw err;
+            });
         }
-    });
+    }));
 }
