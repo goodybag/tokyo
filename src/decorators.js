@@ -1,75 +1,133 @@
 import React, {Component, PropTypes} from 'react';
 import lodash from 'lodash';
+import {EventEmitter} from 'events';
 
-export function listeningTo(storeTokens = [], getter) {
-    if (storeTokens.some(token => token === undefined)) {
-        throw new TypeError('@listeningTo cannot handle undefined tokens');
+export function listeningTo(propNames, eventMapping) {
+    if (typeof eventMapping === 'function') {
+        eventMapping = {'init change': eventMapping};
     }
 
     return decorator;
 
     function decorator(ChildComponent) {
         class ListeningContainerComponent extends Component {
-            static contextTypes = {
-                dependencyCache: PropTypes.instanceOf(Map)
-            };
+            static propTypes = genPropTypes(propNames);
 
             static Original = ChildComponent;
-            static displayName = `ListeningContainerComponent (${ChildComponent.displayName || ChildComponent.name})`;
+            static displayName = `ListeningContainerComponent(${ChildComponent.displayName || ChildComponent.name})`;
 
-            getStores() {
-                const {dependencyCache} = this.context;
+            getEmitters(props) {
+                return lodash.map(propNames, propName => props[propName]);
+            }
 
-                return lodash.map(storeTokens, token => {
-                    if (typeof token === 'string') {
-                        return this.props[token];
-                    } else {
-                        if (dependencyCache.has(token)) {
-                            return dependencyCache.get(token);
-                        } else {
-                            throw new RangeError(`@listeningTo cannot find ${token.name || token} in dependency cache`);
-                        }
-                    }
+            componentWillMount() {
+                this.fireEvent('init');
+            }
+
+            componentDidMount() {
+                this.startListening(this.getEmitters(this.props));
+            }
+
+            startListening(emitters) {
+                lodash.each(emitters, emitter => {
+                    lodash.each(this.eventHandlers, ({eventName, handler}) => {
+                        emitter.on(eventName, handler);
+                    });
                 });
             }
 
             componentDidMount() {
-                lodash.each(this.getStores(), store => {
-                    store.on('change', this.setStateFromStores);
+                this.stopListening(this.getEmitters(this.props));
+            }
+
+            stopListening(emitters) {
+                lodash.each(emitters, emitter => {
+                    lodash.each(this.eventHandlers, ({eventName, handler}) => {
+                        emitter.removeListener(eventName, handler);
+                    });
                 });
             }
 
-            componentWillUnmount() {
-                lodash.each(this.getStores(), store => {
-                    store.removeListener('change', this.setStateFromStores);
-                });
-            }
-
-            componentWillReceiveProps() {
-                this.setStateFromStores();
+            componentWillReceiveProps(nextProps) {
+                this.stopListening(this.getEmitters(this.props));
+                this.startListening(this.getEmitters(nextProps));
             }
 
             constructor(props, context) {
                 super(props, context);
 
-                this.state = {
-                    childProps: getter(this.props)
-                };
+                this.eventHandlers = this.generateHandlers();
+            }
 
-                this.setStateFromStores = () => {
-                    this.setState({
-                        childProps: getter(this.props)
+            fireEvent(eventName, event) {
+                lodash.chain(this.eventHandlers)
+                    .where({eventName})
+                    .forEach(({handler}) => {
+                        handler(event);
+                    })
+                    .commit();
+            }
+
+            handleEvent(eventName, event, getter) {
+                const component = this.refs.child;
+
+                const newProps = getter(this.props, event, component);
+
+                // if the getter returns null/undefined, ignore it's result
+                if (newProps) {
+                    this.setState(({childProps}) => {
+                        return {
+                            childProps: {...childProps, ...newProps}
+                        };
                     });
-                };
+                }
+            }
+
+            generateHandlers() {
+                return lodash.chain(eventMapping)
+                    .map((getter, key) => {
+                        return lodash.map(key.split(' '), eventName => {
+                            return {
+                                eventName,
+                                handler: (event) => {
+                                    this.handleEvent(eventName, event, getter);
+                                }
+                            };
+                        });
+                    })
+                    .flatten()
+                    .value();
             }
 
             render() {
                 const {childProps} = this.state;
 
-                return <ChildComponent {...this.props} {...childProps}/>;
+                return (
+                    <ChildComponent
+                        {...this.props}
+                        {...childProps}
+                        ref="child"
+                    />
+                );
             }
         }
 
         return ListeningContainerComponent;
+    }
+
+    function genPropTypes(propNames) {
+        return lodash.zipObject(lodash.map(propNames, propName => {
+            return [propName, emitterPropType];
+        }));
+    }
+
+    function emitterPropType(props, propName, componentName) {
+        if (props[propName] instanceof EventEmitter) {
+            return;
+        } else if (props[propName] != null && typeof props[propName].on === 'function') {
+            return;
+        } else {
+            return new TypeError(`Required prop "${propName}" is no a valid event emitter`);
+        }
     }
 }
