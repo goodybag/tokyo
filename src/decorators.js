@@ -36,7 +36,7 @@ export function listeningTo(propNames, eventMapping) {
                 });
             }
 
-            componentDidMount() {
+            componentWillUnmount() {
                 this.stopListening(this.getEmitters(this.props));
             }
 
