@@ -56,6 +56,10 @@ export function listeningTo(propNames, eventMapping) {
             constructor(props, context) {
                 super(props, context);
 
+                this.state = {
+                    childProps: {}
+                };
+
                 this.eventHandlers = this.generateHandlers();
             }
 
