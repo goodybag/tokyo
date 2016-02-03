@@ -51,6 +51,7 @@ export function listeningTo(propNames, eventMapping) {
             componentWillReceiveProps(nextProps) {
                 this.stopListening(this.getEmitters(this.props));
                 this.startListening(this.getEmitters(nextProps));
+                this.fireEvent('init', nextProps);
             }
 
             constructor(props, context) {
@@ -63,19 +64,19 @@ export function listeningTo(propNames, eventMapping) {
                 this.eventHandlers = this.generateHandlers();
             }
 
-            fireEvent(eventName, event) {
+            fireEvent(eventName, event, props) {
                 lodash.chain(this.eventHandlers)
                     .where({eventName})
                     .forEach(({handler}) => {
-                        handler(event);
+                        handler(event, props);
                     })
                     .commit();
             }
 
-            handleEvent(eventName, event, getter) {
+            handleEvent(eventName, event, getter, props = this.props) {
                 const component = this.refs.child;
 
-                const newProps = getter(this.props, event, component);
+                const newProps = getter(props, event, component);
 
                 // if the getter returns null/undefined, ignore it's result
                 if (newProps) {
@@ -93,8 +94,8 @@ export function listeningTo(propNames, eventMapping) {
                         return lodash.map(key.split(' '), eventName => {
                             return {
                                 eventName,
-                                handler: (event) => {
-                                    this.handleEvent(eventName, event, getter);
+                                handler: (event, props) => {
+                                    this.handleEvent(eventName, event, getter, props);
                                 }
                             };
                         });
