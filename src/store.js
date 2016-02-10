@@ -39,12 +39,15 @@ export class Store extends EventEmitter {
 function dispatchHandler(action) {
     return Promise.all(lodash.map(this._triggers, ({actionType, method}) => {
         if (action instanceof actionType) {
-            return Promise.try(() => {
+            const promise = Promise.try(() => {
                 return method.call(this, action);
-            }).catch(err => {
-                this.emit('error', err);
-                throw err;
             });
+
+            promise.catch(err => {
+                this.emit('error', err);
+            });
+
+            return promise;
         }
     }));
 }
