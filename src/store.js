@@ -43,6 +43,7 @@ function dispatchHandler(action) {
                 return method.call(this, action);
             }).catch(err => {
                 this.emit('error', err);
+                throw err;
             });
         }
     }));

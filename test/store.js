@@ -1,9 +1,9 @@
 /* globals describe, it, context */
 import expect from 'expect';
 import {EventEmitter} from 'events';
-import {Dispatcher} from 'flux';
 
 import {Store} from '../src/store';
+import {Dispatcher} from '../src/dispatcher';
 
 class TestAction {
     constructor(value) {
