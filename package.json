@@ -1,6 +1,6 @@
 {
   "name": "tokyo",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Opinionated? Flux framework",
   "main": "lib/index.js",
   "scripts": {
